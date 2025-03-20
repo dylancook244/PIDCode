@@ -13,36 +13,36 @@ start_time = time.time()
 count = 0
 
 # font formatting
-main_font_size = 18
+main_font_size = 40
 font = { 'size'   : main_font_size }
 plt.rc('font', **font)
 
 # Set up the figure and axis
 fig = plt.figure(figsize=(6,6))
 # [left, bottom, width, height]
-ax = fig.add_axes([0.1, 0.1, 0.65, 0.8]) # bound to left side
+ax = fig.add_axes([0.125, 0.12, 0.82, 0.77]) # bound to left side
 plt.tight_layout()
-line1, = ax.plot([], [], 'r-', label='Actual Distance')
-line3, = ax.plot([], [], 'c--', label='Current Distance Aimed')
-kp_text = ax.text(0.02, 0.95, '', transform=ax.transAxes, fontsize=main_font_size)
-ki_text = ax.text(0.02, 0.90, '', transform=ax.transAxes, fontsize=main_font_size)
-kd_text = ax.text(0.02, 0.85, '', transform=ax.transAxes, fontsize=main_font_size)
+line1, = ax.plot([], [], 'r-', label='Ball Height', linewidth=8)
+line3, = ax.plot([], [], 'c--', label='Setpoint', linewidth=8)
+kp_text = ax.text(0.02, 0.93, '', transform=ax.transAxes, fontsize=main_font_size)
+ki_text = ax.text(0.02, 0.855, '', transform=ax.transAxes, fontsize=main_font_size)
+kd_text = ax.text(0.02, 0.78, '', transform=ax.transAxes, fontsize=main_font_size)
 
 # Set the plot limits
 ax.set_xlim(0, 10)
 ax.set_ylim(0, 500)
 ax.set_xlabel('Time (s)', fontsize=main_font_size)
-ax.set_ylabel('Distance', fontsize=main_font_size)
-ax.legend()
+ax.set_ylabel('Height', fontsize=main_font_size)
+ax.legend(loc='upper right')
 
 # add buttons
-ButtonHeightHigh = fig.add_axes([0.77, 0.05, 0.2, 0.25])
-ButtonHeightMedium = fig.add_axes([0.77, 0.35, 0.2, 0.25])
-ButtonHeightLow = fig.add_axes([0.77, 0.65, 0.2, 0.25])
+#ButtonHeightHigh = fig.add_axes([0.77, 0.65, 0.2, 0.25])
+#ButtonHeightMedium = fig.add_axes([0.77, 0.35, 0.2, 0.25])
+#ButtonHeightLow = fig.add_axes([0.77, 0.05, 0.2, 0.25])
 
-BHClick = Button(ButtonHeightHigh, '400')
-BMClick = Button(ButtonHeightMedium, '250')
-BLClick = Button(ButtonHeightLow, '125')
+#BHClick = Button(ButtonHeightHigh, '400')
+#BMClick = Button(ButtonHeightMedium, '250')
+#BLClick = Button(ButtonHeightLow, '125')
 
 def init():
     """Initialize the background of the animation."""
@@ -57,7 +57,7 @@ def init():
 
 def serialSetup():
     # baud rate for serial data
-    baudRate = 9600
+    baudRate = 115200
 
 
     # test and find serial port that will be used
@@ -70,13 +70,13 @@ def serialSetup():
 
 # used later for serial setup
 initialSetup = False
-current_aimed_distances = []
-previous_aimed_distances = []
-previous_aimed_distance = 100
+current_setpoints = []
+previous_setpoints = []
+current_setpoint = 250
 
 # previous_aimed_distance = 0
 # Global variables to track state changes
-previous_aimed_distances = [0]
+previous_setpoints = [0]
 change_detected_time = None
 
 def update(frame):
@@ -85,61 +85,79 @@ def update(frame):
     
     try:
         # Simulate or get actual data from serial
-        serialData = arduino.readline().decode('utf-8')
-        # print(arduino.readline().decode('utf-8').rstrip())
-        kp, ki, kd, actual_distance, current_aimed_distance = map(float, serialData.split('|'))
+        serialDataString = arduino.readline().decode('utf-8')
         
-        global previous_aimed_distances
+        #if not serialDataString:
+        #    serialDataString = "0.0|0.0|0.0|0"
+        
+        # print(arduino.readline().decode('utf-8').rstrip())
+        kp, ki, kd, actual_distance, unused_setpoint = map(float, serialDataString.split('|'))
+        
+        global previous_setpoints
         global count
+        global current_setpoint
         
         count += 1
         
-        if count >= 80:
+        if count >= 100:
             actual_distances.pop(0)
-            current_aimed_distances.pop(0)
+            current_setpoints.pop(0)
             times.pop(0)
             
             actual_distances.append(actual_distance)
-            current_aimed_distances.append(current_aimed_distance)
+            current_setpoints.append(current_setpoint)
             times.append(current_time)
 
         
         else:
             actual_distances.append(actual_distance)
-            current_aimed_distances.append(current_aimed_distance)
+            current_setpoints.append(current_setpoint)
             times.append(current_time)
 
         
         line1.set_data(times, actual_distances)
         #line2.set_data(times, previous_aimed_distances)
-        line3.set_data(times, current_aimed_distances)
+        line3.set_data(times, current_setpoints)
         
         kp_text.set_text(f'kp: {kp:.2f}')
         ki_text.set_text(f'ki: {ki:.2f}')
         kd_text.set_text(f'kd: {kd:.2f}')
         
-        ax.set_xlim(max(1.0, current_time - 10), current_time + 0.01)
+        ax.set_xlim(max(1.0, current_time - 10), current_time + 0.1)
         ax.figure.canvas.draw()
         
-        previous_aimed_distance = current_aimed_distance
-        previous_aimed_distances = current_aimed_distances
-        
-        
+        previous_setpoint = current_setpoint
+        previous_setpoints = current_setpoints
         
         # right at the end here, send the current set position
-        BHClick.on_clicked(setpoint=400)
-        BMClick.on_clicked(setpoint=250)
-        BLClick.on_clicked(setpoint=125)
+        #BHClick.on_clicked(BHClicked)
+        #BMClick.on_clicked(BMClicked)
+        #BLClick.on_clicked(BLClicked)
         
-        arduino.write(setpoint)
+        #current_setpoint_string = f"{current_setpoint}\n"
+        #arduino.write(current_setpoint_string.encode())
     
     except Exception as e:
         print(f"Error: {e}")
     
     return line1, line3, kp_text, ki_text, kd_text
 
+# so this code was for 3 setpoints, meaning a two way data transfer between
+# arduino and pi. I didn't get it working, maybe the next person can.
+# Since the monitor is a touch screen you can click buttons, then those buttons
+# would send the setpoint back to the arduino. Whatever I did didn't work
+# so i commented out the part that used this, and took the 250 setpoint
+def BHClicked(event):
+    global current_setpoint
+    current_setpoint = 400
 
+def BMClicked(event):
+    global current_setpoint
+    current_setpoint = 250
 
+def BLClicked(event):
+    global current_setpoint
+    current_setpoint = 125
 
 # Create the animation
 graphAnimation = FuncAnimation(fig, update, init_func=init, blit=True, interval=50)

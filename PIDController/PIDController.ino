@@ -24,8 +24,8 @@ Adafruit_VL53L0X lox = Adafruit_VL53L0X();
 
 //Servo myservo;                      // create servo object to control a servo
 double Setpoint, Input, Output;     // PID Variables
-double Kp = .3, Ki = .04, Kd = .2;  //.3,.15,.4
-unsigned long sTime = 200;
+double Kp = .6, Ki = .3, Kd = 1.6;  //.3,.15,.4
+unsigned long sTime = 100;
 int pPin = A0;           // Analog pot pin for P
 int iPin = A1;           // Analog pot pin for I
 int dPin = A2;           // Analog pot pin for D
@@ -38,7 +38,6 @@ const word PWM_FREQ_HZ = 15000; //Adjust this value to adjust the frequency
 const word TCNT1_TOP = 16000000 / (2 * PWM_FREQ_HZ);
 const unsigned long TIMEOUT = 1;
 int previousValidData = 0;
-int HoustonCounter = 0;
 
 PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, TWAR);
 unsigned long timer = 0;      // Not Used
